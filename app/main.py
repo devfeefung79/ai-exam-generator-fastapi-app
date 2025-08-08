@@ -28,7 +28,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:8080",
         "http://127.0.0.1:8080",
-        # Add your production frontend URL here when deploying
+        "https://ai-exam-generator-react-app.vercel.app"
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -149,5 +149,6 @@ async def generate_exam(
 def download_exam(exam: Exam, file_type: str = Query(...)):
     if file_type not in [ft.value for ft in OutputFileType]:
         raise HTTPException(status_code=400, detail="Invalid file type")
+
 
     return FileService.create_file_stream(exam, file_type)
