@@ -92,8 +92,6 @@ class FileService:
                 return await FileService._read_txt_file(file)
             elif extension == "docx":
                 return await FileService._read_docx_file(file)
-            elif extension == "doc":
-                return await FileService._read_doc_file(file)
             elif extension == "pdf":
                 return await FileService._read_pdf_file(file)
             else:
@@ -189,3 +187,4 @@ class FileService:
             raise
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to process PDF file: {str(e)}")
+
