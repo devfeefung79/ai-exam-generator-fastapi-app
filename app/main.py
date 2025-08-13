@@ -1,8 +1,7 @@
 import json
-from typing import Optional
-from datetime import datetime, timezone
-
 import logging
+from typing import Optional
+
 from fastapi import FastAPI, Query, HTTPException, status, Form, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import StreamingResponse
@@ -19,8 +18,14 @@ app = FastAPI(
 )
 
 # Configure the logger
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("app.log"),
+        logging.StreamHandler()
+    ]
+)
 
 # Configure CORS
 app.add_middleware(
@@ -134,12 +139,6 @@ async def generate_exam(
             detail=f"Error generating exam from Gemini: {e}"
         )
     except Exception as e:
-        print(f"Full exception details: {e}")
-        print(f"Exception type: {type(e)}")
-        import traceback
-        print("Full traceback:")
-        traceback.print_exc()
-        # Catch any other unexpected errors during the process
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"An unexpected error occurred while processing the request: {e}"
@@ -149,6 +148,5 @@ async def generate_exam(
 def download_exam(exam: Exam, file_type: str = Query(...)):
     if file_type not in [ft.value for ft in OutputFileType]:
         raise HTTPException(status_code=400, detail="Invalid file type")
-
 
     return FileService.create_file_stream(exam, file_type)

@@ -1,13 +1,16 @@
+import logging
 import os
 import tempfile
 from io import StringIO, BytesIO
 
-import mammoth
+import PyPDF2
 from docx import Document
 from fastapi import UploadFile, HTTPException
 from fastapi.responses import StreamingResponse
 
 from app.schemas.exam import Exam
+
+logger = logging.getLogger(__name__)
 
 
 class FileService:
@@ -43,7 +46,8 @@ class FileService:
             if q.type == "Essay":
                 buffer.write(f"Question {q.id}: Not Applicable\n")
 
-        buffer.seek(0)  # rewind to the start
+        # Reset cursor
+        buffer.seek(0)
 
         filename = f"{exam.exam_title.replace(' ', '_')}.{file_type}"
 
@@ -72,6 +76,7 @@ class FileService:
         6. Memory-based processing where possible (no temp files for PDF)
         """
 
+        logger.info("Reading file with name: %s", file.filename)
         # Input validation
         if not file or not file.filename:
             raise HTTPException(status_code=400, detail="No file provided")
@@ -98,16 +103,16 @@ class FileService:
                 )
 
         except HTTPException:
-            raise  # Re-raise HTTP exceptions
+            raise
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
         finally:
-            # Ensure file is closed
             await file.close()
 
     @staticmethod
     async def _read_txt_file(file: UploadFile) -> str:
         """Read text file with multiple encoding support"""
+        logger.info("Reading text file with name: " + file.filename)
         content = await file.read()
 
         # Try multiple encodings
@@ -125,6 +130,7 @@ class FileService:
     @staticmethod
     async def _read_docx_file(file: UploadFile) -> str:
         """Read DOCX file using temporary file"""
+        logger.info("Reading DOCX file with name: " + file.filename)
         content = await file.read()
         temp_file = None
 
@@ -143,33 +149,16 @@ class FileService:
                 return text_content
 
         finally:
-            # Clean up temp file
             if temp_file and os.path.exists(temp_file):
                 try:
                     os.unlink(temp_file)
                 except OSError:
-                    pass  # If cleanup fails, continue
-
-    @staticmethod
-    async def _read_doc_file(file: UploadFile) -> str:
-        """Read DOC file using mammoth (better than temp files)"""
-        content = await file.read()
-
-        try:
-            doc_file = BytesIO(content)
-            result = mammoth.extract_raw_text(doc_file)
-
-            if not result.value.strip():
-                raise HTTPException(status_code=400, detail="No text content found in DOC file")
-
-            return result.value
-
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to process DOC file: {str(e)}")
+                    pass
 
     @staticmethod
     async def _read_pdf_file(file: UploadFile) -> str:
         """Read PDF file using memory stream (no temp file needed)"""
+        logger.info("Reading PDF file with name: " + file.filename)
         content = await file.read()
 
         try:

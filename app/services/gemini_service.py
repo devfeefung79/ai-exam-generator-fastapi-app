@@ -1,6 +1,5 @@
-import os
-from datetime import datetime, timezone
 import logging
+import os
 
 from dotenv import load_dotenv
 from google import genai
@@ -11,13 +10,11 @@ from app.schemas.exam import Exam
 
 load_dotenv()
 
+# Module-level logger
 logger = logging.getLogger(__name__)
 
 class GeminiService:
     def __init__(self, model_name: str = "gemini-2.5-flash"):
-        # Configure logging
-        self.service_name = "GeminiService"
-        self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
 
         # Get API key
         self.api_key = os.getenv("GOOGLE_API_KEY") # Use GOOGLE_API_KEY for genai client default behavior
@@ -43,8 +40,10 @@ class GeminiService:
 
     def generate_exam(self, number_of_questions: int, difficulty: str, question_types: list, exam_guide: str, additional_info: str) -> GenerateContentResponse:
         try:
+            logger.info("Calling Gemini API with number of questions: %d, difficulty: %s, question types: %s, exam guide: %s, additional info: %s")
             prompt = self.build_prompt(number_of_questions, difficulty, question_types, exam_guide, additional_info)
 
+            logger.info("Calling Gemini API with prompt: %s", prompt)
             response = self.client.models.generate_content(model=self.model_name,
                                                            contents=prompt,
                                                            config={
@@ -52,6 +51,7 @@ class GeminiService:
                                                                "response_schema": Exam,
                                                            })
 
+            logger.info("Received response from Gemini API: %s", response)
             return response
 
         except APIError as e:

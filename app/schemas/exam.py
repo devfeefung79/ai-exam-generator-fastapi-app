@@ -1,8 +1,7 @@
 import enum
-from datetime import datetime, timezone
 from typing import List, Optional, Union, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class Difficulty(str, enum.Enum):
